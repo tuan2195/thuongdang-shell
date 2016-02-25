@@ -22,27 +22,6 @@
 // 	int background;
 // };
 
-void ChangeDir(char *path)
-{
-	int status;
-	if (path[0]=='/') // Absolute path
-	{
-		status = chdir(path);
-	}
-	else
-	{
-		char cwd[KILOBYTE];
-		getcwd(cwd, sizeof(cwd));
-		cwd[strlen(cwd)] = '/';
-		strcat(cwd, path);
-		status = chdir(cwd);
-	}
-	if (status < 0)
-	{
-		printf("%s: Path does not exist!\n", path);
-	}
-}
-
 void ExecCmd(struct Command *command)
 {
 	int i, pid, child_status, infile, outfile;
