@@ -6,6 +6,11 @@
 #define MAX_ARGS 10
 #define KILOBYTE 1<<10
 
+typedef struct _pipe_
+{
+	int fd[2];
+} Pipe;
+
 struct SubCommand
 {
 	char *line;
@@ -28,23 +33,35 @@ void ReadCommand(char *line, struct Command *command);
 void PrintCommand(struct Command *command);
 void ReadRedirectsAndBackground(struct Command *command);
 void ArrayShift(char** argv, int pos);
+void ExecCmd(struct Command *command);
+void InterpretCmd(struct Command *command);
+int  BackgroundWait(int pid);
+void BackgroundCheck(void);
+void Snake(void);
 
 void ChangeDir(char *path)
 {
-	int status;
-	if (path[0]=='/') // Absolute path
-	{
-		status = chdir(path);
-	}
-	else
-	{
-		char cwd[KILOBYTE];
-		getcwd(cwd, sizeof(cwd));
-		cwd[strlen(cwd)] = '/';
-		strcat(cwd, path);
-		status = chdir(cwd);
-	}
-	if (status < 0)
+	int status = chdir(path);
+	// if (path[0]=='/') // Absolute path
+	// {
+	// 	status = chdir(path);
+	// }
+	// else if (path[0]=='.' && path[1]=='/') // ./*
+	// {
+	// 	status = chdir(path+2);
+	// }
+	// else // Relative path
+	// {
+	// 	status = chdir(path);
+	// 	// char cwd[KILOBYTE];
+	// 	// getcwd(cwd, sizeof(cwd));
+	// 	// cwd[strlen(cwd)] = '/';
+	// 	// strcat(cwd, path);
+	// 	// status = chdir(cwd);
+	// 	// printf("CD to %s\n", cwd);
+	// }
+
+	if (status < 0)	// Final check
 	{
 		printf("%s: Path does not exist!\n", path);
 	}
@@ -58,6 +75,7 @@ void ReadRedirectsAndBackground(struct Command *command)
 
 	for (i = 0; i < command->num_sub_commands; ++i)
 	{
+		j = 0;
 		while (command->sub_commands[i].argv[j]) 
 		{
 			if (strcmp(command->sub_commands[i].argv[j],"<")==0)
@@ -88,7 +106,7 @@ void ReadRedirectsAndBackground(struct Command *command)
 				command->sub_commands[i].argv[j] = NULL;
 				continue;
 			}
-			j++;
+			++j;
 		}
 	}
 
@@ -99,7 +117,7 @@ void ArrayShift(char** argv, int pos)
 	while (argv[pos]) 
 		argv[pos]=argv[++pos];
 
-	argv[pos] == NULL;
+	argv[pos] = NULL;
 }
 
 
@@ -180,4 +198,73 @@ void PrintCommand(struct Command *command)
 		printf("Yes\n");
 	else
 		printf("No\n");
+}
+
+void InterpretCmd(struct Command *command)
+{
+	if (command->sub_commands[0].argv[0] == NULL) // empty line
+	{
+		return; // avoid segfault
+	}
+
+	if (strcmp(command->sub_commands[0].argv[0], "exit") == 0) // exit to exit
+	{
+		exit(0);
+	}
+
+	if (strcmp(command->sub_commands[0].argv[0], "snake") == 0) // empty line
+	{
+		Snake();
+		return;
+	}
+
+	if (strcmp(command->sub_commands[0].argv[0], "cd") == 0) // cd emulator
+	{
+		ChangeDir(command->sub_commands[0].line+3);
+		return;
+	}
+
+	ExecCmd(command);
+}
+
+int BackgroundWait(int pid)
+{
+	static int local_pid;
+	switch(pid)
+	{
+		case -1: // Reset signal
+			local_pid = -1;
+			return 0;
+		case 0: // Request signal
+			if (local_pid == -1)
+				return 0;
+			else
+				return waitpid(local_pid, NULL, WNOHANG);
+		default: // New PID
+			local_pid = pid;
+			return 0;
+	}
+}
+
+void BackgroundCheck(void)
+{
+	int background_pid = BackgroundWait(0);
+	if (background_pid) 
+	{
+		BackgroundWait(-1); // Reset
+		printf("[%d] finished\n", background_pid);
+	}
+}
+
+void Snake(void)
+{
+	printf("\
+	+-------------------------------------------------+\n\
+	|Dedicated to someone I had loved, and still love*|\n\
+	|     with all my heart. Or what's left of it.    |\n\
+	|            (*: As of compile time)              |\n\
+	|                ===========> </3                 |\n\
+	+-------------------------------------------------+\n" \
+	);
+	// How do I compile C and C++ code together?...
 }

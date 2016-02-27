@@ -1,47 +1,40 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>		// printf(), getchar()
+#include <stdlib.h>		// free()
+#include <string.h>		// memset(), malloc()
 #include <unistd.h> 	// execvp()
-#include <sys/types.h>
+#include <sys/types.h>	// pid_t
 #include <sys/wait.h>	// wait()
 #include <fcntl.h>		// open()
+#include <assert.h>		// assert()
 #include "shell.h"
-
-// struct SubCommand
-// {
-// 	char *line;
-// 	char *argv[MAX_ARGS];
-// };
-
-// struct Command
-// {
-// 	struct SubCommand sub_commands[MAX_SUB_COMMANDS];
-// 	int num_sub_commands;
-// 	char *stdin_redirect;
-// 	char *stdout_redirect;
-// 	int background;
-// };
 
 void ExecCmd(struct Command *command)
 {
-	int i, pid, child_status, infile, outfile;
+	int i, j, status;
+	const int numProcs = command->num_sub_commands;
+	const int numPipes = numProcs-1;
+	Pipe *pipes = malloc(sizeof(Pipe)*numPipes);
+	pid_t *pids = malloc(sizeof(pid_t)*numProcs), pid;
 
-	if (strcmp(command->sub_commands[0].argv[0], "cd") == 0) // cd emulator
+	for (i = 0; i < numPipes; ++i)
 	{
-		ChangeDir(command->sub_commands[0].line+3);
-		return;
+		status = pipe(pipes[i].fd);
+		assert(status == 0);
 	}
 
-	for (i = 0; i < command->num_sub_commands; ++i)
+	for (i = 0; i < numProcs; ++i)
 	{
 		pid = fork();
+		pids[i] = pid;
+		assert(pid >= 0);
 
 		if (pid == 0) // Child process
 		{
-			if (command->stdin_redirect)	// Stdin redirect (<)
+			// Stdin redirect (<)
+			if (command->stdin_redirect)	
 			{
-				infile = 	open(command->stdin_redirect, 
-							O_RDONLY);
+				int infile = open(command->stdin_redirect, \
+							 O_RDONLY);
 				if (infile < 0)
 				{
 					printf("%s: File does not exist!\n", command->stdin_redirect);
@@ -50,10 +43,11 @@ void ExecCmd(struct Command *command)
 				close(0);
 				dup(infile);
 			}
-			if (command->stdout_redirect)	// Stdin redirect (<)
+			// Stdout redirect (>)
+			if (command->stdout_redirect)	
 			{
-				outfile = 	open(command->stdout_redirect, \
-							O_WRONLY | O_APPEND | O_CREAT, S_IRWXU); // chmod 700
+				int outfile = open(command->stdout_redirect, \
+							  O_WRONLY | O_APPEND | O_CREAT, S_IRWXU); // chmod 700
 				if (outfile < 0)
 				{
 					printf("%s: Cannot write to file!\n", command->stdout_redirect);
@@ -62,33 +56,70 @@ void ExecCmd(struct Command *command)
 				close(1);
 				dup(outfile);
 			}
+			// Close stdout && stderr if background and no redirect
+			// Technically not standard shell behavior
 			if (command->background && !command->stdout_redirect) 
-			// Close stdout && stderr if & and no redirect
 			{
 				close(1);
 				close(2);
 			}
+			// Close every other pipes
+			for (j = 0; j < numPipes; ++j)
+			{
+				if (j != i-1)
+				{
+					close(pipes[j].fd[0]);
+				}
+				if (j != i)
+				{
+					close(pipes[j].fd[1]);
+				}
+			}
+			// Piping
+			if (i != numPipes)
+			{
+				close(1);
+				status = dup(pipes[i].fd[1]);
+				assert(status >= 0);
+			}
+			if (i != 0)	// If not the first process then close the input
+			{
+
+				close(0);
+				status = dup(pipes[i-1].fd[0]);
+				assert(status >= 0);
+			}
 			// EXECUTE
-			child_status = execvp(command->sub_commands[i].argv[0], command->sub_commands[i].argv);
-			if (child_status < 0)	// If execvp failed
+			status = execvp(command->sub_commands[i].argv[0], command->sub_commands[i].argv);
+			if (status < 0)	// If execvp failed
 			{
 				printf("%s: Command not found!\n", command->sub_commands[i].argv[0]);
 				exit(-1);
 			}
 		} 
-		else if (pid > 0)	// Parent
-		{
-			if (command->background)
-				printf("[%d]\n", pid);
-			else
-				waitpid(pid, &child_status, 0);
-		}
 	}
+	for (j = 0; j < numPipes; ++j)
+	{
+		close(pipes[j].fd[0]);
+		close(pipes[j].fd[1]);
+	}
+	if (command->background)
+	{
+		printf("[%d]\n", pids[numProcs-1]);
+		BackgroundWait(pids[numProcs-1]);
+	} 
+	else
+	{
+		for (i = 0; i < numProcs; ++i)
+			waitpid(pids[i], &status, 0);
+	}
+	free(pipes);
+	free(pids);
 }
 
 int main()
 {
-	char s[KILOBYTE], cwd[KILOBYTE];// path[KILOBYTE];
+	char s[KILOBYTE], cwd[KILOBYTE];
 	struct Command *command;
 	command = malloc(sizeof(struct Command));
 	while (1)
@@ -99,8 +130,9 @@ int main()
 		fgets(s, sizeof(s), stdin);
 		// Extract arguments and print them
 		ReadCommand(s, command);
-		PrintCommand(command);
+		// PrintCommand(command);
+		BackgroundCheck();
 		// Run shit
-		ExecCmd(command);
+		InterpretCmd(command);
 	}
 }
