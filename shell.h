@@ -10,6 +10,7 @@
 #define MAX_SUB_COMMANDS 5
 #define MAX_ARGS 10
 #define KILOBYTE 1<<10
+#define RESET -1
 
 typedef struct _pipe_
 {
@@ -228,23 +229,15 @@ void InterpretCmd(struct Command *command)
 	ExecCmd(command);
 }
 
-int BackgroundWait(int pid)
+int BackgroundWait(int external_pid)
 {
 	static int local_pid;
-	switch(pid)
-	{
-		case -1: // Reset signal
-			local_pid = -1;
-			return 0;
-		case 0: // Request signal
-			if (local_pid == -1)
-				return 0;
-			else
-				return waitpid(local_pid, NULL, WNOHANG);
-		default: // New PID
-			local_pid = pid;
-			return 0;
-	}
+	if (external_pid != 0)
+		local_pid = external_pid;
+	else
+		if (local_pid != RESET)
+			return waitpid(local_pid, NULL, WNOHANG);
+	return 0;
 }
 
 void BackgroundCheck(void)
@@ -252,7 +245,7 @@ void BackgroundCheck(void)
 	int background_pid = BackgroundWait(0);
 	if (background_pid) 
 	{
-		BackgroundWait(-1); // Reset
+		BackgroundWait(RESET); // Reset
 		printf("[%d] finished\n", background_pid);
 	}
 }

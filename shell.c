@@ -110,6 +110,7 @@ void ExecCmd(struct Command *command)
 
 int main()
 {
+	BackgroundWait(-1);
 	char s[KILOBYTE], cwd[KILOBYTE];
 	struct Command *command = malloc(sizeof(struct Command));
 	while (1)
