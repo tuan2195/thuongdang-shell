@@ -1,6 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h>		// printf(), getchar()
+#include <stdlib.h>		// free()
+#include <string.h>		// memset(), malloc()
+#include <unistd.h> 	// execvp()
+#include <sys/types.h>	// pid_t
+#include <sys/wait.h>	// wait()
+#include <fcntl.h>		// open()
+#include <assert.h>		// assert()
 
 #define MAX_SUB_COMMANDS 5
 #define MAX_ARGS 10
@@ -203,16 +208,12 @@ void PrintCommand(struct Command *command)
 void InterpretCmd(struct Command *command)
 {
 	if (command->sub_commands[0].argv[0] == NULL) // empty line
-	{
 		return; // avoid segfault
-	}
 
 	if (strcmp(command->sub_commands[0].argv[0], "exit") == 0) // exit to exit
-	{
 		exit(0);
-	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "snake") == 0) // empty line
+	
+	if (strcmp(command->sub_commands[0].argv[0], "snake") == 0) // easter egg
 	{
 		Snake();
 		return;

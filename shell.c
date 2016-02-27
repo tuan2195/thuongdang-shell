@@ -1,11 +1,3 @@
-#include <stdio.h>		// printf(), getchar()
-#include <stdlib.h>		// free()
-#include <string.h>		// memset(), malloc()
-#include <unistd.h> 	// execvp()
-#include <sys/types.h>	// pid_t
-#include <sys/wait.h>	// wait()
-#include <fcntl.h>		// open()
-#include <assert.h>		// assert()
 #include "shell.h"
 
 void ExecCmd(struct Command *command)
