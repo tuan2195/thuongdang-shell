@@ -76,15 +76,14 @@ void ExecCmd(struct Command *command)
 				}
 			}
 			// Piping
-			if (i != numPipes)
+			if (i != numPipes) // If not the last process then close output
 			{
 				close(1);
 				status = dup(pipes[i].fd[1]);
 				assert(status >= 0);
 			}
-			if (i != 0)	// If not the first process then close the input
+			if (i != 0)	// If not the first process then close input
 			{
-
 				close(0);
 				status = dup(pipes[i-1].fd[0]);
 				assert(status >= 0);
@@ -120,8 +119,7 @@ void ExecCmd(struct Command *command)
 int main()
 {
 	char s[KILOBYTE], cwd[KILOBYTE];
-	struct Command *command;
-	command = malloc(sizeof(struct Command));
+	struct Command *command = malloc(sizeof(struct Command));
 	while (1)
 	{
 		memset(command, 0, sizeof(struct Command));
