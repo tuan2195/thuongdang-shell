@@ -411,20 +411,6 @@ void KBInput(char* buffer)
 	fgets(buffer, KILOBYTE, stdin);
 }
 
-void Snake(void)
-{
-	printf("\
-	+-------------------------------------------------+\n\
-	|Dedicated to someone I had loved, and still love*|\n\
-	|     with all my heart. Or what's left of it.    |\n\
-	|            (*: As of compile time)              |\n\
-	|                ===========> </3                 |\n\
-	+-------------------------------------------------+\n" \
-	);
-	// How do I compile C and C++ code together?...
-}
-
-
 void About(void)
 {
 	printf("Thuong Dang Shell - #TD$ v. 0.01a\n");
