@@ -312,44 +312,41 @@ void PrintCommand(struct Command *command)
 void InterpretCmd(struct Command *command)
 {
 	if (command->sub_commands[0].argv[0] == NULL) // empty line
-		return; // avoid segfault
-
-	if (strcmp(command->sub_commands[0].argv[0], "exit") == 0) // exit to exit
+    {
+		return;
+    }
+    else if (strcmp(command->sub_commands[0].argv[0], "exit") == 0)
+    {
 		exit(0);
-	
-	if (strcmp(command->sub_commands[0].argv[0], "cd") == 0) // cd emulator
+    }
+    if (strcmp(command->sub_commands[0].argv[0], "cd") == 0)
 	{
+        // cd emulator
 		ChangeDir(command->sub_commands[0].line+3);
 		return;
 	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "clear") == 0) // Export environment variables
+    else if (strcmp(command->sub_commands[0].argv[0], "clear") == 0)
 	{
+        // Clear terminal output
 		printf("\e[1;1H\e[2J");
 		return;
 	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "export") == 0) // Export environment variables
-	{
+    else if (strcmp(command->sub_commands[0].argv[0], "export") == 0)
+	{ 
+        // Export environment variables
 		Export(command);
 		return;
 	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "lsenv") == 0) // List environment variables
-	{
+    else if (strcmp(command->sub_commands[0].argv[0], "lsenv") == 0)
+	{ 
+        // List environment variables
 		ListEnvVar();
 		return;
 	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "ver") == 0) // version
+    else if (strcmp(command->sub_commands[0].argv[0], "ver") == 0)
 	{
+        // Show version info
 		About();
-		return;
-	}
-
-	if (strcmp(command->sub_commands[0].argv[0], "snake") == 0) // easter egg
-	{
-		Snake();
 		return;
 	}
 
