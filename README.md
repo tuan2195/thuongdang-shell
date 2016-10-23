@@ -1,6 +1,7 @@
-# Thuong Dang Shell - #TD$ v. 0.01a
+# thuongdang-shell
 
 Thuong Dang Shell - #TD$ v. 0.01a
+
 Implemented by Tuan Dao
 
 Functions:
